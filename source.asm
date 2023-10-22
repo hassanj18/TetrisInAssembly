@@ -10,9 +10,10 @@ topright:dw 0
 bottomleft:dw 0
 bottomright:dw 0
 
-mess1:db 'SCORE'
+mess1:db 'SCORE:'
 mess2:db 'TIME'
 mess3:db 'SHAPE'
+mess4: db 'G A M E  O V E R!'
 score:dw 0
 
 clrscr: push es
@@ -138,7 +139,9 @@ push es
  mov ax,0
  mov cx,[bp+4]
  mov bx,[bp+6]
-mov ah,0x3E
+mov ax,[bp+10]
+mov ah,al
+mov al,0
 mov si,0
 mov di,[bp+8]
 printlp:
@@ -155,7 +158,7 @@ pop cx
 pop bx
 pop ax
 pop bp
-ret 6
+ret 8
 
 
 DrawBorder:
@@ -220,14 +223,19 @@ exit:
  
  ret
 DrawScoreBoard:
-
+push ax
+mov ax,0
+mov ax,0x3E
+push ax
 mov ax,620
 push ax
 push mess1
-mov ax,5
+mov ax,6
 push ax
 call printMessage
 
+mov ax,0x3E
+push ax
 mov ax,940
 push ax
 push mess2
@@ -235,6 +243,8 @@ mov ax,4
 push ax
 call printMessage
 
+mov ax,0x3E
+push ax
 mov ax,1420
 push ax
 push mess3
@@ -242,7 +252,8 @@ mov ax,5
 push ax
 call printMessage
 
-ret
+pop ax
+ret 
 
 shape:
 
@@ -284,6 +295,29 @@ pop bp
 
 ret 2
 
+DrawEndScreen:
+call clrscr
+mov ax,0x07
+push ax
+mov ax,1660
+push ax
+push mess4
+mov ax,17
+push ax
+call printMessage
+
+
+mov ax,0x07
+push ax
+mov ax,1986
+push ax
+push mess1
+mov ax,6
+push ax
+call printMessage
+
+ret
+
 start:
 call clrscr
 call DrawBorder
@@ -292,6 +326,8 @@ call DrawScoreBoard
 mov ax,1640
 push ax
 call sqaure
+
+;call DrawEndScreen
 
 mov ah,0x1
 int 21h
