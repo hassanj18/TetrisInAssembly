@@ -3,7 +3,7 @@ jmp start
 var:db '-'
 x1:db 0
 x2:db 0
-y1:db 50
+y1:db 60
 y2:db 24
 topleft:dw 0
 topright:dw 0
@@ -266,28 +266,28 @@ push ax
 mov ax,0
 mov ax,0x3E
 push ax
-mov ax,620
+mov ax,610
 push ax
 push mess1
 mov ax,6
 push ax
 call printMessage
 
-mov di,634
+mov di,624
 mov ax,[score]
 push ax;
 call PrintNum
 
 mov ax,0x3E
 push ax
-mov ax,940
+mov ax,930
 push ax
 push mess2
 mov ax,4
 push ax
 call printMessage
 
-mov di,954
+mov di,944
 mov ax,[score]
 push ax;
 call PrintNum
@@ -295,7 +295,7 @@ call PrintNum
 
 mov ax,0x3E
 push ax
-mov ax,1420
+mov ax,1410
 push ax
 push mess3
 mov ax,5
@@ -447,6 +447,44 @@ pop bp
 
 ret 4
 
+Sshape:
+push bp
+mov bp,sp
+push ax
+push di
+
+
+mov ax,0x4820;red
+push ax
+mov di,[bp+4]
+push di
+call sqaure
+
+mov ax,0x2820;green
+push ax
+add di,320
+push di
+call sqaure
+
+mov ax,0x1820;blue
+push ax
+mov di,[bp+4]
+add di,8
+push di
+call sqaure
+
+mov ax,0x6820
+push ax
+add di,320
+push di
+call sqaure
+
+pop di
+pop ax
+pop bp
+ret 2
+
+
 DrawEndScreen:
 push ax
 push di
@@ -485,11 +523,15 @@ call DrawBorder
 call ScoreBoard
 call DrawScoreBoard
 
- mov ax,0x4820
+ ;mov ax,0x4820
+;push ax
+;mov ax,1640
+;push ax
+;call sqaure
+
+mov ax,2160
 push ax
-mov ax,1640
-push ax
-call sqaure
+call Sshape
 
 mov ax,400
 push ax
