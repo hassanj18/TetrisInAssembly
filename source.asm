@@ -14,8 +14,8 @@ mess1:db 'SCORE:'
 mess2:db 'TIME'
 mess3:db 'SHAPE'
 mess4: db 'G A M E  O V E R!'
-score:dw 0
-
+score:dw  10
+time: dw 20
 clrscr: push es
  push ax
  push di
@@ -124,6 +124,44 @@ pop bp
 ret 10
 
 classPrint:
+PrintNum:
+push bp
+mov bp,sp
+push bx
+push cx
+push ax
+push si
+push dx
+push di
+
+mov ax,0xb800
+mov es,ax
+mov ax,[bp+4]
+mov ah,0
+
+mov bl,10
+div bl
+add ah,30h
+add al,30h
+
+
+mov dh,3Eh
+
+mov dl,al
+mov word[es:di],dx
+add di,2
+
+mov dl,ah
+mov word[es:di],dx
+
+pop di
+pop dx
+pop si
+pop ax
+pop cx
+pop bx
+pop bp
+ret 2
 printMessage:
 push bp
 mov bp,sp
@@ -223,6 +261,7 @@ exit:
  
  ret
 DrawScoreBoard:
+push di
 push ax
 mov ax,0
 mov ax,0x3E
@@ -234,6 +273,11 @@ mov ax,6
 push ax
 call printMessage
 
+mov di,634
+mov ax,[score]
+push ax;
+call PrintNum
+
 mov ax,0x3E
 push ax
 mov ax,940
@@ -243,6 +287,12 @@ mov ax,4
 push ax
 call printMessage
 
+mov di,954
+mov ax,[score]
+push ax;
+call PrintNum
+
+
 mov ax,0x3E
 push ax
 mov ax,1420
@@ -251,13 +301,116 @@ push mess3
 mov ax,5
 push ax
 call printMessage
-
 pop ax
+pop di
 ret 
 
 shape:
+Ishape:
+push bp
+mov bp,sp
+push ax
+push di
 
-sqaure:
+mov ax,0x4820;red
+push ax
+mov di,[bp+4]
+push di
+call sqaure
+
+mov ax,0x2820;green
+push ax
+add di,320
+push di
+call sqaure
+
+mov ax,0x1820;blue
+push ax
+add di,320
+push di
+call sqaure
+
+mov ax,0x6820
+push ax
+add di,320
+push di
+call sqaure
+
+pop di
+pop ax
+pop bp
+ret 2
+LShape:
+push bp
+mov bp,sp
+push ax
+push di
+
+mov ax,0x4820;red
+push ax
+mov di,[bp+4]
+push di
+call sqaure
+
+mov ax,0x2820;green
+push ax
+add di,320
+push di
+call sqaure
+
+mov ax,0x1820;blue
+push ax
+add di,320
+push di
+call sqaure
+
+mov ax,0x6820
+push ax
+sub di,8
+push di
+call sqaure
+
+pop di
+pop ax
+pop bp
+ret 2
+
+TShape:
+push bp
+mov bp,sp
+push ax
+push di
+
+mov ax,0x4820
+push ax
+mov di,[bp+4]
+push di
+call sqaure
+
+mov ax,0x2820;green
+push ax
+add di,8
+push di
+call sqaure
+
+mov ax,0x1820;blue
+push ax
+add di,8
+push di
+call sqaure
+
+mov ax,0x6820
+push ax
+add di,312
+push di
+call sqaure
+
+pop di
+pop ax
+pop bp
+ret 2
+
+sqaure:;first paraemeter is attribute byte(color), second is di address
 push bp
 mov bp,sp
 push ax
@@ -268,8 +421,7 @@ push es
 mov di,[bp+4]
  mov ax, 0xb800
  mov es, ax 
- mov ah,0x48
- mov al,32
+ mov ax,[bp+6]
  mov [es:di],ax
  add di,2
  mov [es:di],ax
@@ -293,9 +445,11 @@ pop di
 pop ax
 pop bp
 
-ret 2
+ret 4
 
 DrawEndScreen:
+push ax
+push di
 call clrscr
 mov ax,0x07
 push ax
@@ -316,6 +470,13 @@ mov ax,6
 push ax
 call printMessage
 
+mov di,2000
+mov ax,[score]
+push ax;
+call PrintNum
+
+pop di
+pop ax
 ret
 
 start:
@@ -323,11 +484,33 @@ call clrscr
 call DrawBorder
 call ScoreBoard
 call DrawScoreBoard
+
+ mov ax,0x4820
+push ax
 mov ax,1640
 push ax
 call sqaure
 
-;call DrawEndScreen
+mov ax,400
+push ax
+call LShape
+
+mov ax,2270
+push ax
+call TShape
+
+
+mov ax,500
+push ax
+
+call Ishape
+
+mov ah,0x1
+int 21h
+cmp al,'0'
+jne end
+call DrawEndScreen
+end:
 
 mov ah,0x1
 int 21h
