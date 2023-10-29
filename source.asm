@@ -15,7 +15,7 @@ mess2:db 'TIME'
 mess3:db 'SHAPE'
 mess4: db 'G A M E  O V E R!'
 score:dw  10
-time: dw 20
+time: dw 5
 clrscr: push es
  push ax
  push di
@@ -288,14 +288,14 @@ push ax
 call printMessage
 
 mov di,944
-mov ax,[score]
+mov ax,[time]
 push ax;
 call PrintNum
 
 
 mov ax,0x3E
 push ax
-mov ax,1410
+mov ax,1416
 push ax
 push mess3
 mov ax,5
@@ -528,6 +528,10 @@ call DrawScoreBoard
 ;mov ax,1640
 ;push ax
 ;call sqaure
+
+mov ax,1894
+push ax
+call Sshape
 
 mov ax,2160
 push ax
