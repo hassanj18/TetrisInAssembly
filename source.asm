@@ -17,8 +17,9 @@ mess4: db 'G A M E  O V E R!'
 score:dw  10
 time: dw 5
 
+oldksr: dd 0
 
-CurrShapeType: dw 1
+CurrShapeType: dw 3
 CurrShape_Address: dw 400
 
 clrscr: push es   
@@ -463,7 +464,7 @@ add di,320
 push di
 call sqaure
 
-mov ax,0x6820
+mov ax,0x0720
 push ax
 sub di,8
 push di
@@ -473,7 +474,7 @@ end_Lshape:
 pop di
 pop ax
 pop bp
-ret 2
+ret 4
 
 TShape:
 push bp
@@ -481,6 +482,9 @@ mov bp,sp
 push ax
 push di
 
+
+cmp word[bp+6],0;O means print blank
+je draw_BG_Tshape
 mov ax,0x4820
 push ax
 mov di,[bp+4]
@@ -504,11 +508,37 @@ push ax
 add di,312
 push di
 call sqaure
+jmp end_Tshape
+draw_BG_Tshape:
+mov ax,0x0720
+push ax
+mov di,[bp+4]
+push di
+call sqaure
 
+mov ax,0x0720;
+push ax
+add di,8
+push di
+call sqaure
+
+mov ax,0x0720;
+push ax
+add di,8
+push di
+call sqaure
+
+mov ax,0x0720
+push ax
+add di,312
+push di
+call sqaure
+
+end_Tshape:
 pop di
 pop ax
 pop bp
-ret 2
+ret 4
 
 sqaure:;first paraemeter is attribute byte(color), second is di address
 push bp
@@ -623,7 +653,39 @@ delaying
 loop delaying
 ret
 
+KeyInt:
+push ax
+in al,0x60
+cmp al,0x1e
+jne ISright
+sub word[CurrShape_Address],2
+jmp nomatch
+
+ISright:
+cmp al,0x20
+jne nomatch
+add word[CurrShape_Address],2
+
+ 
+nomatch: 
+pop ax
+jmp far [cs:oldksr]
+
 start:
+
+;hooking Keyboard Interupt
+xor ax,ax
+mov es,ax
+
+mov ax, [es:9*4]
+mov [oldksr],ax
+mov ax,[es:9*4+2]
+mov [oldksr+2],ax
+cli 
+mov word[es:9*4],KeyInt
+mov word[es:9*4+2],cs
+sti 
+
 call clrscr
 call DrawBorder
 call ScoreBoard
