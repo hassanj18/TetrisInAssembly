@@ -16,7 +16,12 @@ mess3:db 'SHAPE'
 mess4: db 'G A M E  O V E R!'
 score:dw  10
 time: dw 5
-clrscr: push es
+
+
+CurrShapeType: dw 1
+CurrShape_Address: dw 400
+
+clrscr: push es   
  push ax
  push di
 
@@ -305,13 +310,48 @@ pop ax
 pop di
 ret 
 
+DrawCurrShape:
+push bp
+mov bp,sp
+push ax
+
+mov ax,[bp+4]
+cmp word[CurrShapeType],1
+je PrintI
+cmp word[CurrShapeType],2
+je PrintL
+cmp word[CurrShapeType],3
+je PrintT
+jmp return
+
+PrintI:
+push ax
+push word[CurrShape_Address]
+call Ishape
+jmp return
+PrintL:
+push ax
+push word[CurrShape_Address]
+call LShape      
+jmp return
+PrintT:
+push ax
+push word[CurrShape_Address]
+call TShape
+
+return:
+pop ax
+pop bp
+ret 2
+
 shape:
 Ishape:
 push bp
 mov bp,sp
 push ax
 push di
-
+cmp word[bp+6],0;O means print blank
+je draw_BG_Ishape
 mov ax,0x4820;red
 push ax
 mov di,[bp+4]
@@ -336,16 +376,48 @@ add di,320
 push di
 call sqaure
 
+jmp end_Ishape
+
+draw_BG_Ishape:
+mov ax,0x0720;red
+push ax
+mov di,[bp+4]
+push di
+call sqaure
+
+
+push ax
+add di,320
+push di
+call sqaure
+
+push ax
+add di,320
+push di
+call sqaure
+
+
+push ax
+add di,320
+push di
+call sqaure
+
+end_Ishape:
 pop di
 pop ax
 pop bp
-ret 2
+ret 4
+
+
 LShape:
 push bp
 mov bp,sp
 push ax
 push di
 
+
+cmp word[bp+6],0;O means print blank
+je draw_BG_Lshape
 mov ax,0x4820;red
 push ax
 mov di,[bp+4]
@@ -370,6 +442,34 @@ sub di,8
 push di
 call sqaure
 
+jmp end_Lshape
+
+draw_BG_Lshape:
+mov ax,0x0720;black
+push ax
+mov di,[bp+4]
+push di
+call sqaure
+
+mov ax,0x0720;black
+push ax
+add di,320
+push di
+call sqaure
+
+mov ax,0x0720;black
+push ax
+add di,320
+push di
+call sqaure
+
+mov ax,0x6820
+push ax
+sub di,8
+push di
+call sqaure
+
+end_Lshape:
 pop di
 pop ax
 pop bp
@@ -517,39 +617,45 @@ pop di
 pop ax
 ret
 
+delay:
+mov cx, 0xffff
+delaying
+loop delaying
+ret
+
 start:
 call clrscr
 call DrawBorder
 call ScoreBoard
 call DrawScoreBoard
 
- ;mov ax,0x4820
-;push ax
-;mov ax,1640
-;push ax
-;call sqaure
 
-mov ax,1894
-push ax
-call Sshape
-
-mov ax,2160
-push ax
-call Sshape
-
-mov ax,400
-push ax
-call LShape
-
-mov ax,2270
-push ax
-call TShape
+mov cx,5
+GameLoop:
 
 
-mov ax,500
-push ax
+ mov bx,0
+ push bx
+ call DrawCurrShape
+add word[CurrShape_Address],160
+mov bx,1
+push bx
+call DrawCurrShape
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
 
-call Ishape
+loop GameLoop
 
 mov ah,0x1
 int 21h
