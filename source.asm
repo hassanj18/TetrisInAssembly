@@ -20,8 +20,8 @@ time: dw 5
 oldksr: dd 0
 
 CurrShapeType: dw 3
-CurrShape_Address: dw 400
-
+CurrShape_Address: dw 240
+Offset_Address:dw 0
 clrscr: push es   
  push ax
  push di
@@ -649,31 +649,134 @@ ret
 
 delay:
 mov cx, 0xffff
-delaying
+delaying:
 loop delaying
 ret
 
 KeyInt:
 push ax
+mov word[Offset_Address],0
 in al,0x60
 cmp al,0x1e
 jne ISright
-sub word[CurrShape_Address],2
+sub word[Offset_Address],8
 jmp nomatch
 
 ISright:
 cmp al,0x20
 jne nomatch
-add word[CurrShape_Address],2
+add word[Offset_Address],8
 
  
 nomatch: 
 pop ax
 jmp far [cs:oldksr]
 
+CheckSqaureCollision:
+push ax
+push bx
+push cx
+push es
+
+
+mov ax,0xb800
+push ax
+
+pop es
+
+mov dx,0
+mov ax,0x0720
+mov cx,2
+mov bx,0
+
+Detection:
+push cx
+mov cx,4
+push di
+repe scasw
+cmp cx,0
+pop di
+pop cx
+jne exitSqaureCollsion
+add di,160
+loop Detection
+
+mov dx,1
+exitSqaureCollsion:
+
+
+pop es
+pop cx
+pop bx
+pop ax
+
+ret
+
+
+CollisionDetection:
+push bx
+push cx
+push dx
+push si
+push di
+push es
+push ds 
+
+cmp word[CurrShapeType],3
+je CheckTShapCollision
+
+mov ax,0
+
+CheckTShapCollision:
+mov bx,[CurrShape_Address]
+mov di,bx
+add di,320
+call CheckSqaureCollision
+cmp dx,0
+je CollisionDetectionFailed
+mov di,bx
+add di,336
+call CheckSqaureCollision
+cmp dx,0
+je CollisionDetectionFailed
+mov di,bx
+add di,648
+call CheckSqaureCollision
+cmp dx,0
+je CollisionDetectionFailed
+
+mov ax,1
+
+CollisionDetectionFailed:
+
+
+pop ds
+pop es
+pop di 
+pop si
+pop dx
+pop cx
+pop bx
+ret
+
+ClearCanvas:
+mov di,164
+mov ax,0xb800
+push ax
+pop es
+mov ax,0x0720
+mov cx,56
+lpppp:
+mov [es:di],ax
+add di,2
+loop lpppp
+
+ret
+
 start:
 
 ;hooking Keyboard Interupt
+
 xor ax,ax
 mov es,ax
 
@@ -693,13 +796,22 @@ call DrawScoreBoard
 
 
 mov cx,5
+
+
 GameLoop:
 
 
  mov bx,0
  push bx
  call DrawCurrShape
+call CollisionDetection
+cmp ax,0
+je skip
 add word[CurrShape_Address],160
+mov ax,[Offset_Address]
+add [CurrShape_Address],ax
+skip:
+
 mov bx,1
 push bx
 call DrawCurrShape
@@ -717,7 +829,19 @@ call delay
 call delay
 call delay
 
+
 loop GameLoop
+
+run:
+
+
+mov ax,0xb800
+push ax
+pop es
+mov di,[CurrShape_Address]
+
+
+
 
 mov ah,0x1
 int 21h
