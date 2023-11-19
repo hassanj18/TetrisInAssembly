@@ -3,7 +3,7 @@ jmp start
 var:db '-'
 x1:db 0
 x2:db 0
-y1:db 60
+y1:db 59
 y2:db 24
 topleft:dw 0
 topright:dw 0
@@ -20,7 +20,7 @@ time: dw 5
 oldksr: dd 0
 
 CurrShapeType: dw 3
-CurrShape_Address: dw 240
+CurrShape_Address: dw 212
 Offset_Address:dw 0
 clrscr: push es   
  push ax
@@ -690,16 +690,12 @@ mov cx,2
 mov bx,0
 
 Detection:
-push cx
+
 mov cx,4
-push di
+
 repe scasw
 cmp cx,0
-pop di
-pop cx
 jne exitSqaureCollsion
-add di,160
-loop Detection
 
 mov dx,1
 exitSqaureCollsion:
@@ -713,6 +709,48 @@ pop ax
 ret
 
 
+CheckLeftRightCollision:
+push ax
+
+push cx
+push es
+
+
+mov ax,0xb800
+push ax
+
+pop es
+
+
+mov ax,0x0720
+
+mov bx,0
+mov cx,2
+Check:
+push cx
+push di
+mov cx,4
+repe scasw
+cmp cx,0
+pop di
+pop cx
+jne exitLeftRight
+add di,160
+loop Check
+
+
+mov bx,1
+exitLeftRight:
+
+
+
+pop es
+pop cx
+
+pop ax
+
+ret
+
 CollisionDetection:
 push bx
 push cx
@@ -722,10 +760,11 @@ push di
 push es
 push ds 
 
+mov ax,0
 cmp word[CurrShapeType],3
 je CheckTShapCollision
 
-mov ax,0
+
 
 CheckTShapCollision:
 mov bx,[CurrShape_Address]
@@ -744,11 +783,48 @@ add di,648
 call CheckSqaureCollision
 cmp dx,0
 je CollisionDetectionFailed
+RightCheck:
+cmp word[Offset_Address],0
+jle LeftCheck
+
+
+mov di,[CurrShape_Address]
+add di,24
+call CheckLeftRightCollision
+cmp bx,0
+je reset
+jmp endDet
+LeftCheck:
+cmp word[Offset_Address],0
+je endDet
+
+mov di,[CurrShape_Address]
+sub di,8
+
+call CheckLeftRightCollision
+cmp bx,0
+je reset
+jmp endDet
+
+reset:
+mov word[Offset_Address],0
+
+
+
+endDet:
+cmp dx,0
+je CollisionDetectionFailed
+
+
 
 mov ax,1
+jmp endend
+
 
 CollisionDetectionFailed:
+mov word[Offset_Address],0
 
+endend:
 
 pop ds
 pop es
@@ -796,25 +872,33 @@ call DrawScoreBoard
 
 
 mov cx,5
+mov ax,0xb800
+push ax
+pop es
 
-
+mov ax,0
 GameLoop:
 
 
- mov bx,0
+call CollisionDetection
+cmp ax,0 
+je run
+
+
+
+
+mov bx,0
  push bx
  call DrawCurrShape
-call CollisionDetection
-cmp ax,0
-je skip
 add word[CurrShape_Address],160
 mov ax,[Offset_Address]
 add [CurrShape_Address],ax
-skip:
-
 mov bx,1
 push bx
 call DrawCurrShape
+skip:
+
+
 call delay
 call delay
 call delay
@@ -833,12 +917,20 @@ call delay
 loop GameLoop
 
 run:
+mov bx,1
+push bx
+call DrawCurrShape
 
 
-mov ax,0xb800
-push ax
-pop es
-mov di,[CurrShape_Address]
+
+mov ax,[oldksr]
+mov bx,[oldksr+2]
+cli 
+
+mov word[es:9*4],ax
+mov word[es:9*4+2],bx
+sti 
+
 
 
 
