@@ -3,7 +3,7 @@ jmp start
 var:db '-'
 x1:db 0
 x2:db 0
-y1:db 60
+y1:db 59
 y2:db 24
 topleft:dw 0
 topright:dw 0
@@ -14,19 +14,19 @@ mess1:db 'SCORE:'
 mess2:db 'TIME'
 mess3:db 'SHAPE'
 mess4: db 'G A M E  O V E R!'
-score:dw  10
+score:dw  0
+time: dw 0
 
-min: dw 4
-sec: dw 59
-time: dw 5
+min: dw 0
+sec: dw 0
 Tcounts: dw 0
 
-
+oldtimer:dd 0
 
 oldksr: dd 0
 
-CurrShapeType: dw 3
-CurrShape_Address: dw 240
+CurrShapeType: dw 1
+CurrShape_Address: dw 212
 Offset_Address:dw 0
 clrscr: push es   
  push ax
@@ -299,10 +299,10 @@ mov ax,4
 push ax
 call printMessage
 
-; mov di,944
-; mov ax,[time]
-; push ax;
-; call PrintNum
+mov di,944
+mov ax,[time]
+push ax;
+call PrintNum
 
 
 mov ax,0x3E
@@ -329,6 +329,8 @@ cmp word[CurrShapeType],2
 je PrintL
 cmp word[CurrShapeType],3
 je PrintT
+cmp word[CurrShapeType],4
+je PrintS
 jmp return
 
 PrintI:
@@ -345,6 +347,11 @@ PrintT:
 push ax
 push word[CurrShape_Address]
 call TShape
+jmp return
+PrintS:
+push ax
+push word[CurrShape_Address]
+call Sshape
 
 return:
 pop ax
@@ -588,7 +595,8 @@ push bp
 mov bp,sp
 push ax
 push di
-
+cmp word[bp+6],0
+je draw_BG_Sshape
 
 mov ax,0x4820;red
 push ax
@@ -614,11 +622,41 @@ push ax
 add di,320
 push di
 call sqaure
+jmp end_BG_Sshape
+draw_BG_Sshape:
+
+mov ax,0x0720;red
+push ax
+mov di,[bp+4]
+push di
+call sqaure
+
+mov ax,0x0720;green
+push ax
+add di,320
+push di
+call sqaure
+
+mov ax,0x0720;blue
+push ax
+mov di,[bp+4]
+add di,8
+push di
+call sqaure
+
+mov ax,0x0720
+push ax
+add di,320
+push di
+call sqaure
+
+end_BG_Sshape:
+
 
 pop di
 pop ax
 pop bp
-ret 2
+ret 4
 
 
 DrawEndScreen:
@@ -696,16 +734,12 @@ mov cx,2
 mov bx,0
 
 Detection:
-push cx
+
 mov cx,4
-push di
+
 repe scasw
 cmp cx,0
-pop di
-pop cx
 jne exitSqaureCollsion
-add di,160
-loop Detection
 
 mov dx,1
 exitSqaureCollsion:
@@ -719,6 +753,48 @@ pop ax
 ret
 
 
+CheckLeftRightCollision:
+push ax
+
+push cx
+push es
+
+
+mov ax,0xb800
+push ax
+
+pop es
+
+
+mov ax,0x0720
+
+mov bx,0
+mov cx,2
+Check:
+push cx
+push di
+mov cx,4
+repe scasw
+cmp cx,0
+pop di
+pop cx
+jne exitLeftRight
+add di,160
+loop Check
+
+
+mov bx,1
+exitLeftRight:
+
+
+
+pop es
+pop cx
+
+pop ax
+
+ret
+
 CollisionDetection:
 push bx
 push cx
@@ -728,10 +804,116 @@ push di
 push es
 push ds 
 
+mov ax,0
+cmp word[CurrShapeType],1
+je CheckIShapeCollision
+cmp word[CurrShapeType],2
+je CheckLShapeCollision
 cmp word[CurrShapeType],3
 je CheckTShapCollision
+cmp word[CurrShapeType],4
+je CheckSShapCollision
 
-mov ax,0
+
+CheckIShapeCollision:
+mov bx,[CurrShape_Address]
+mov di,bx
+add di,1280
+call CheckSqaureCollision
+cmp dx,0
+je CollisionDetectionFailed
+RightCheckI:
+cmp word[Offset_Address],0
+jle LeftCheckI
+
+mov di,[CurrShape_Address]
+add di,8
+mov cx,4
+ICollisionloopRight:
+push di
+call CheckLeftRightCollision
+pop di
+cmp bx,0
+je reset
+add di,320
+loop ICollisionloopRight
+jmp endDet
+
+LeftCheckI:
+cmp word[Offset_Address],0
+je endDet
+mov di,[CurrShape_Address]
+sub di,8
+mov cx,4
+ICollisionloopLeft:
+push di
+call CheckLeftRightCollision
+pop di
+cmp bx,0
+je reset
+add di,320
+loop ICollisionloopLeft
+
+jmp endDet
+
+
+CheckLShapeCollision:
+mov bx,[CurrShape_Address]
+mov di,bx
+add di,960
+mov bx,di
+call CheckSqaureCollision
+cmp dx,0
+je CollisionDetectionFailed
+mov di,bx
+sub di,8
+call CheckSqaureCollision
+cmp dx,0
+je CollisionDetectionFailed
+
+
+RightCheckL:
+cmp word[Offset_Address],0
+jle LeftCheckL
+
+mov di,[CurrShape_Address]
+add di,8
+mov cx,3
+LCollisionloopRight:
+push di
+call CheckLeftRightCollision
+pop di
+cmp bx,0
+je reset
+add di,320
+loop LCollisionloopRight
+jmp endDet
+
+
+
+LeftCheckL:
+cmp word[Offset_Address],0
+je endDet
+mov di,[CurrShape_Address]
+sub di,8
+mov cx,2
+LCollisionloopLeft:
+push di
+call CheckLeftRightCollision
+pop di
+cmp bx,0
+je reset
+add di,320
+loop LCollisionloopLeft
+
+sub di,8
+call CheckLeftRightCollision
+cmp bx,0
+je reset
+
+jmp endDet
+
+
 
 CheckTShapCollision:
 mov bx,[CurrShape_Address]
@@ -750,11 +932,107 @@ add di,648
 call CheckSqaureCollision
 cmp dx,0
 je CollisionDetectionFailed
+RightCheck:
+cmp word[Offset_Address],0
+jle LeftCheck
+
+
+mov di,[CurrShape_Address]
+add di,24
+call CheckLeftRightCollision
+cmp bx,0
+je reset
+
+mov di,[CurrShape_Address]
+add di,336
+call CheckLeftRightCollision
+cmp bx,0
+je reset
+
+jmp endDet
+LeftCheck:
+cmp word[Offset_Address],0
+je endDet
+mov di,[CurrShape_Address]
+sub di,8
+call CheckLeftRightCollision
+cmp bx,0
+je reset
+mov di,[CurrShape_Address]
+add di,320
+call CheckLeftRightCollision
+cmp bx,0
+je reset
+jmp endDet
+
+
+CheckSShapCollision:
+mov bx,[CurrShape_Address]
+mov di,bx
+add di,640
+call CheckSqaureCollision
+cmp dx,0
+je CollisionDetectionFailed
+mov di,bx
+add di,648
+call CheckSqaureCollision
+cmp dx,0
+je CollisionDetectionFailed
+
+RightCheckS:
+cmp word[Offset_Address],0
+jle LeftCheckI
+
+mov di,[CurrShape_Address]
+add di,16
+mov cx,2
+SCollisionloopRight:
+push di
+call CheckLeftRightCollision
+pop di
+cmp bx,0
+je reset
+add di,320
+loop SCollisionloopRight
+jmp endDet
+
+LeftCheckS:
+cmp word[Offset_Address],0
+je endDet
+mov di,[CurrShape_Address]
+sub di,8
+mov cx,2
+SCollisionloopLeft:
+push di
+call CheckLeftRightCollision
+pop di
+cmp bx,0
+je reset
+add di,320
+loop SCollisionloopLeft
+
+jmp endDet
+
+
+reset:
+mov word[Offset_Address],0
+
+
+
+endDet:
+cmp dx,0
+je CollisionDetectionFailed
+
+
 
 mov ax,1
+jmp endend
+
 
 CollisionDetectionFailed:
+mov word[Offset_Address],0
 
+endend:
 
 pop ds
 pop es
@@ -765,59 +1043,146 @@ pop cx
 pop bx
 ret
 
-ClearCanvas:
+
+
+CheckEndGameCollision:
+push ax
+push cx
+push di
+push es
+mov cx,13
 mov di,164
 mov ax,0xb800
 push ax
 pop es
+mov bx,0
+EndGameLoop:
 mov ax,0x0720
-mov cx,56
-lpppp:
-mov [es:di],ax
-add di,2
-loop lpppp
+cmp word[es:di],ax
+jne Check2
+add di,8
+loop EndGameLoop
+jcxz EndCheck
 
+
+Check2:
+mov cx,5
+
+CheckEndGameCollisionLoop:
+cmp word[es:di],ax
+je EndCheck
+add di,320
+loop CheckEndGameCollisionLoop
+mov bx,1
+
+EndCheck:
+
+pop es
+pop di
+pop cx
+pop ax
+ret
+
+Debug:
+push di
+
+mov di,1416
+add di,22
+mov word[es:di],0x0131
+pop di
 ret
 
 
-timer: 
+Timer: 
 push di
-inc word [cs:got] ; increment tick count
+push ax
+add word [cs:Tcounts],1 ; increment tick count
 cmp word [cs:Tcounts],18
 jne skipall
 
-
-;add word[CurrShape_Address],160
-
 ;printing
+
+mov word [cs:Tcounts],0
+add word[cs:sec],1
+cmp word[cs:sec],60
+jne PrintTime
+
+
+addMinute:
+mov word[cs:sec],0
+add word[cs:min],1
+
+PrintTime:
 
 mov di,946
 push word[min]
 call PrintNum
 
-
 add di,6
 push word[sec]
 call PrintNum
 
-;
-mov word[cs:Tcounts],0
-dec word[cs:sec]
-cmp word[cs:sec],0
-jne skipall
-mov word[cs:sec],59
-dec word[cs:min]
-cmp word[cs:min],0
-;je end
 skipall: 
 mov al, 0x20
 out 0x20, al ; send EOI to PIC
+pop ax
 pop di
 iret
 
+
+UpdateCurrentShape:
+push bx
+cmp word[CurrShapeType],4
+jne StartPosition2
+mov word[CurrShape_Address],2054
+jmp StartPosition
+StartPosition2:
+cmp word[CurrShapeType],3
+jne SetPostition
+mov word[CurrShape_Address],2048
+jmp StartPosition
+SetPostition:
+mov word[CurrShape_Address],2056
+StartPosition:
+mov bx,1
+push bx
+call DrawCurrShape
+pop bx
+ret
+
+ClearCanvas:
+push di
+push es
+push cx
+push ax
+
+mov ax,0xb800
+push ax
+pop es
+mov cx,8
+mov di,2048
+mov ax,0x03720
+clearCanvasLoop:
+push cx
+push di
+mov cx,12
+rep stosw
+pop di
+pop cx
+add di,160
+loop clearCanvasLoop
+
+pop ax
+pop cx
+pop es
+pop di
+
+ret
+
+
 start:
 
-;hooking Keyboard/Timer Interupt
+;hooking Keyboard Interupt
 
 xor ax,ax
 mov es,ax
@@ -827,11 +1192,21 @@ mov [oldksr],ax
 mov ax,[es:9*4+2]
 mov [oldksr+2],ax
 cli 
-mov word [es:8*4], timer 
-mov [es:8*4+2], cs
 mov word[es:9*4],KeyInt
 mov word[es:9*4+2],cs
 sti 
+xor ax,ax
+mov es,ax
+
+mov ax,[es:8*4]
+mov [oldtimer],ax
+mov ax,[es:8*4+2]
+mov [oldtimer],ax
+
+cli
+mov word[es:8*4],Timer
+mov word[es:8*4+2],cs
+sti
 
 call clrscr
 call DrawBorder
@@ -840,50 +1215,80 @@ call DrawScoreBoard
 
 
 mov cx,5
-
-
-GameLoop:
-
-
- mov bx,0
- push bx
- call DrawCurrShape
-call CollisionDetection
-cmp ax,0
-je skip
-
-add word[CurrShape_Address],160
-mov ax,[Offset_Address]
-add [CurrShape_Address],ax
-skip:
-
-mov bx,1
-push bx
-call DrawCurrShape
-call delay
-call delay
-call delay
-call delay
-call delay
-call delay
-call delay
-call delay
-call delay
-call delay
-call delay
-call delay
-call delay
-
-
-loop GameLoop
-
-run:
-
-
 mov ax,0xb800
 push ax
 pop es
-mov di,[CurrShape_Address]
+mov word[CurrShapeType],1
+mov ax,0
+
+
+GameLoop:
+call CheckEndGameCollision
+cmp bx,1
+je DrawEndScreen
+
+call CollisionDetection
+cmp ax,0 
+je NewBlock
+
+
+mov bx,0
+ push bx
+ call DrawCurrShape
+add word[CurrShape_Address],160
+mov ax,[Offset_Address]
+add [CurrShape_Address],ax
+mov bx,1
+push bx
+call DrawCurrShape
+
+
+
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+
+
+
+
+jmp GameLoop
+
+NewBlock:
+add word[CurrShapeType],1
+cmp word[CurrShapeType],5
+je ResetBlock
+continue:
+call ClearCanvas
+call UpdateCurrentShape
+mov word[CurrShape_Address],212
+mov bx,1
+push bx
+call DrawCurrShape
+jmp GameLoop
+
+ResetBlock:
+mov word[CurrShapeType],1
+jmp continue
+
+run:
+call Debug
+
+
+
+jmp run
+
+mov ax,[oldksr]
+mov bx,[oldksr+2]
+cli 
+
+mov word[es:9*4],ax
+mov word[es:9*4+2],bx
+sti 
+
 
 
 
