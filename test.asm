@@ -1051,7 +1051,7 @@ push cx
 push di
 push es
 mov cx,13
-mov di,164
+mov di,4
 mov ax,0xb800
 push ax
 pop es
@@ -1180,6 +1180,59 @@ pop di
 ret
 
 
+clearTop:
+push es
+ push ax
+ push di
+push cx
+ mov ax, 0xb800
+ sub ax,80
+ mov es, ax 
+ mov di, 0
+ mov cx,640
+ mov ax,0x0720
+loc: 
+cld
+rep stosw
+
+ mov ax, 0xb800
+ mov es, ax
+mov di,4
+mov cx,56
+mov ax,0x0720
+loc2:
+cld
+rep stosw
+ pop cx
+ pop di
+ pop ax
+ pop es
+ ret
+
+GenerateNewBlock:
+push bx
+cmp word[CurrShapeType],1
+jne CheckShape
+mov word[CurrShape_Address],-1228
+CheckShape:
+cmp word[CurrShapeType],2
+jne CheckShape2
+mov word[CurrShape_Address],-908
+CheckShape2:
+cmp word[CurrShapeType],3
+jne Check3
+mov word[CurrShape_Address],-588
+Check3:
+cmp word[CurrShapeType],4
+jne Check4
+mov word[CurrShape_Address],-588
+Check4:
+mov bx,1
+push bx
+call DrawCurrShape
+pop bx
+ret
+
 start:
 
 ;hooking Keyboard Interupt
@@ -1212,16 +1265,17 @@ call clrscr
 call DrawBorder
 call ScoreBoard
 call DrawScoreBoard
-
+call clearTop
 
 mov cx,5
 mov ax,0xb800
 push ax
 pop es
-mov word[CurrShapeType],1
+mov word[CurrShapeType],0
 mov ax,0
+;-----------------------------------
 
-
+jmp NewBlock
 GameLoop:
 call CheckEndGameCollision
 cmp bx,1
@@ -1264,10 +1318,11 @@ je ResetBlock
 continue:
 call ClearCanvas
 call UpdateCurrentShape
-mov word[CurrShape_Address],212
-mov bx,1
-push bx
-call DrawCurrShape
+call GenerateNewBlock
+;mov word[CurrShape_Address],212
+;mov bx,1
+;push bx
+;call DrawCurrShape
 jmp GameLoop
 
 ResetBlock:
