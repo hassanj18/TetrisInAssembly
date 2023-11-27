@@ -806,13 +806,13 @@ push ds
 
 mov ax,0
 cmp word[CurrShapeType],1
-je CheckIShapeCollision
+je near CheckIShapeCollision
 cmp word[CurrShapeType],2
-je CheckLShapeCollision
+je near CheckLShapeCollision
 cmp word[CurrShapeType],3
-je CheckTShapCollision
+je near CheckTShapCollision
 cmp word[CurrShapeType],4
-je CheckSShapCollision
+je near CheckSShapCollision
 
 
 CheckIShapeCollision:
@@ -821,7 +821,7 @@ mov di,bx
 add di,1280
 call CheckSqaureCollision
 cmp dx,0
-je CollisionDetectionFailed
+je near CollisionDetectionFailed
 RightCheckI:
 cmp word[Offset_Address],0
 jle LeftCheckI
@@ -834,14 +834,14 @@ push di
 call CheckLeftRightCollision
 pop di
 cmp bx,0
-je reset
+je near reset
 add di,320
 loop ICollisionloopRight
 jmp endDet
 
 LeftCheckI:
 cmp word[Offset_Address],0
-je endDet
+je near endDet
 mov di,[CurrShape_Address]
 sub di,8
 mov cx,4
@@ -850,7 +850,7 @@ push di
 call CheckLeftRightCollision
 pop di
 cmp bx,0
-je reset
+je near reset
 add di,320
 loop ICollisionloopLeft
 
@@ -864,12 +864,12 @@ add di,960
 mov bx,di
 call CheckSqaureCollision
 cmp dx,0
-je CollisionDetectionFailed
+je near CollisionDetectionFailed
 mov di,bx
 sub di,8
 call CheckSqaureCollision
 cmp dx,0
-je CollisionDetectionFailed
+je near CollisionDetectionFailed
 
 
 RightCheckL:
@@ -884,7 +884,7 @@ push di
 call CheckLeftRightCollision
 pop di
 cmp bx,0
-je reset
+je near reset
 add di,320
 loop LCollisionloopRight
 jmp endDet
@@ -893,7 +893,7 @@ jmp endDet
 
 LeftCheckL:
 cmp word[Offset_Address],0
-je endDet
+je near endDet
 mov di,[CurrShape_Address]
 sub di,8
 mov cx,2
@@ -902,14 +902,14 @@ push di
 call CheckLeftRightCollision
 pop di
 cmp bx,0
-je reset
+je near reset
 add di,320
 loop LCollisionloopLeft
 
 sub di,8
 call CheckLeftRightCollision
 cmp bx,0
-je reset
+je near reset
 
 jmp endDet
 
@@ -921,17 +921,17 @@ mov di,bx
 add di,320
 call CheckSqaureCollision
 cmp dx,0
-je CollisionDetectionFailed
+je near CollisionDetectionFailed
 mov di,bx
 add di,336
 call CheckSqaureCollision
 cmp dx,0
-je CollisionDetectionFailed
+je near CollisionDetectionFailed
 mov di,bx
 add di,648
 call CheckSqaureCollision
 cmp dx,0
-je CollisionDetectionFailed
+je near CollisionDetectionFailed
 RightCheck:
 cmp word[Offset_Address],0
 jle LeftCheck
@@ -941,23 +941,23 @@ mov di,[CurrShape_Address]
 add di,24
 call CheckLeftRightCollision
 cmp bx,0
-je reset
+je near reset
 
 mov di,[CurrShape_Address]
 add di,336
 call CheckLeftRightCollision
 cmp bx,0
-je reset
+je near reset
 
 jmp endDet
 LeftCheck:
 cmp word[Offset_Address],0
-je endDet
+je near endDet
 mov di,[CurrShape_Address]
 sub di,8
 call CheckLeftRightCollision
 cmp bx,0
-je reset
+je near reset
 mov di,[CurrShape_Address]
 add di,320
 call CheckLeftRightCollision

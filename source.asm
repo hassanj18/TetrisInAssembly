@@ -686,9 +686,11 @@ pop ax
 ret
 
 delay:
+push cx
 mov cx, 0xffff
 delaying:
 loop delaying
+pop cx
 ret
 
 KeyInt:
@@ -1088,7 +1090,39 @@ mov word[es:di],0x0131
 
 ret
 
+blink:
+push es
+push ax
+push cx
+mov ax,0xb800
+mov es,ax
+
+push di
+mov cx,56
+BlinkL1:
+mov ax,[es:di]
+or ah,80h
+mov word[es:di],ax
+add di,2
+loop BlinkL1
+pop di
+push di
+sub di,160
+mov cx,56
+BlinkL2:
+mov ax,[es:di]
+or ah,80h
+mov word[es:di],ax
+add di,2
+loop BlinkL2
+pop di
+pop cx
+pop ax
+pop es
+ret
 ScrollUp
+push cx
+push di
 push es
 push ds
 push si
@@ -1100,22 +1134,24 @@ shl cx,1
 cld
 mov si,di
 sub si,320
-ScrollLoop
+ScrollLoop:
 push cx
 push di 
-push si
-mov cx,120
+
+mov cx,56
 rep movsw
-pop si
 pop di
 pop cx
-sub si,160
 sub di,160
+mov si,di
+sub si,320
 loop ScrollLoop
 pop ax
 pop si
 pop ds
 pop es
+pop di
+pop cx
 ret
 RowCheck:
 
@@ -1140,11 +1176,33 @@ je CheckNextRow
 mov [es:di],ax
 add di,8
 loop Cloop
+
+mov di,624
+add word[score],10
+push word[score]
+call PrintNum
+
 pop di 
 pop cx
+call blink
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+
+
 call ScrollUp
+
 push cx
 push di
+
 CheckNextRow:
 pop di
 pop cx
@@ -1221,12 +1279,11 @@ call delay
 call delay
 
 
-call RowCheck
-
 jmp GameLoop
 
 NewBlock:
 add word[CurrShapeType],1
+call RowCheck
 
 
 cmp word[CurrShapeType],5
