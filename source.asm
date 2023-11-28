@@ -1110,22 +1110,16 @@ mov es,ax
 
 push di
 mov cx,56
+mov si,di
+sub si,160
+mov ax,0x0720
 BlinkL1:
-mov ax,[es:di]
-or ah,80h
 mov word[es:di],ax
+mov word[es:si],ax
 add di,2
+add si,2
+call delay
 loop BlinkL1
-pop di
-push di
-sub di,160
-mov cx,56
-BlinkL2:
-mov ax,[es:di]
-or ah,80h
-mov word[es:di],ax
-add di,2
-loop BlinkL2
 pop di
 pop cx
 pop ax
