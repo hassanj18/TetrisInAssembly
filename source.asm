@@ -14,8 +14,14 @@ mess1:db 'SCORE:'
 mess2:db 'TIME'
 mess3:db 'SHAPE'
 mess4: db 'G A M E  O V E R!'
-score:dw  10
-time: dw 5
+score:dw  0
+time: dw 0
+
+min: dw 0
+sec: dw 0
+Tcounts: dw 0
+
+oldtimer:dd 0
 
 oldksr: dd 0
 
@@ -938,14 +944,24 @@ add di,24
 call CheckLeftRightCollision
 cmp bx,0
 je near reset
+
+mov di,[CurrShape_Address]
+add di,336
+call CheckLeftRightCollision
+cmp bx,0
+je near reset
+
 jmp endDet
 LeftCheck:
 cmp word[Offset_Address],0
 je near endDet
-
 mov di,[CurrShape_Address]
 sub di,8
-
+call CheckLeftRightCollision
+cmp bx,0
+je near reset
+mov di,[CurrShape_Address]
+add di,320
 call CheckLeftRightCollision
 cmp bx,0
 je reset
@@ -1029,19 +1045,6 @@ pop cx
 pop bx
 ret
 
-ClearCanvas:
-mov di,164
-mov ax,0xb800
-push ax
-pop es
-mov ax,0x0720
-mov cx,56
-lpppp:
-mov [es:di],ax
-add di,2
-loop lpppp
-
-ret
 
 
 
@@ -1083,11 +1086,19 @@ pop cx
 pop ax
 ret
 
-Debug
-
-mov di,268
+Debug:
+push di
+push es
+push ax
+mov ax,0xb800
+push ax
+pop es
+mov di,[CurrShape_Address]
 mov word[es:di],0x0131
+pop ax
+pop es
 
+pop di
 ret
 
 blink:
@@ -1120,7 +1131,7 @@ pop cx
 pop ax
 pop es
 ret
-ScrollUp
+ScrollUp:
 push cx
 push di
 push es
@@ -1217,7 +1228,155 @@ pop di
 ret
 
 
+Timer: 
+push di
+push ax
+add word [cs:Tcounts],1 ; increment tick count
+cmp word [cs:Tcounts],18
+jne skipall
 
+;printing
+
+mov word [cs:Tcounts],0
+add word[cs:sec],1
+cmp word[cs:sec],60
+jne PrintTime
+
+
+addMinute:
+mov word[cs:sec],0
+add word[cs:min],1
+
+PrintTime:
+
+mov di,946
+push word[min]
+call PrintNum
+
+add di,6
+push word[sec]
+call PrintNum
+
+skipall: 
+mov al, 0x20
+out 0x20, al ; send EOI to PIC
+pop ax
+pop di
+iret
+
+
+UpdateCurrentShape:
+push bx
+cmp word[CurrShapeType],4
+jne StartPosition2
+mov word[CurrShape_Address],2054
+jmp StartPosition
+StartPosition2:
+cmp word[CurrShapeType],3
+jne SetPostition
+mov word[CurrShape_Address],2048
+jmp StartPosition
+SetPostition:
+mov word[CurrShape_Address],2056
+StartPosition:
+mov bx,1
+push bx
+call DrawCurrShape
+pop bx
+ret
+
+ClearCanvas:
+push di
+push es
+push cx
+push ax
+
+mov ax,0xb800
+push ax
+pop es
+mov cx,8
+mov di,2048
+mov ax,0x03720
+clearCanvasLoop:
+push cx
+push di
+mov cx,12
+rep stosw
+pop di
+pop cx
+add di,160
+loop clearCanvasLoop
+
+pop ax
+pop cx
+pop es
+pop di
+
+ret
+
+
+clearTop:
+push es
+ push ax
+ push di
+push cx
+ mov ax, 0xb800
+ sub ax,80
+ mov es, ax 
+ mov di, 0
+ mov cx,640
+ mov ax,0x0720
+loc: 
+cld
+rep stosw
+
+ mov ax, 0xb800
+ mov es, ax
+mov di,4
+mov cx,56
+mov ax,0x0720
+loc2:
+cld
+rep stosw
+
+mov di,164
+mov cx,56
+mov ax,0x0720
+
+cld
+rep stosw
+
+ pop cx
+ pop di
+ pop ax
+ pop es
+ ret
+
+GenerateNewBlock:
+
+cmp word[CurrShapeType],1
+jne CheckShape
+mov word[CurrShape_Address],-1228
+CheckShape:
+cmp word[CurrShapeType],2
+jne CheckShape2
+mov word[CurrShape_Address],-908
+CheckShape2:
+cmp word[CurrShapeType],3
+jne Check3
+mov word[CurrShape_Address],-588
+Check3:
+cmp word[CurrShapeType],4
+jne Check4
+mov word[CurrShape_Address],-588
+Check4:
+ret
+
+
+
+;-----------------------------------------------------------------------
+;START
+;-----------------------------------------------------------------------
 start:
 
 ;hooking Keyboard Interupt
@@ -1234,18 +1393,32 @@ mov word[es:9*4],KeyInt
 mov word[es:9*4+2],cs
 sti 
 
+xor ax,ax
+mov es,ax
+
+mov ax,[es:8*4]
+mov [oldtimer],ax
+mov ax,[es:8*4+2]
+mov [oldtimer],ax
+
+cli
+mov word[es:8*4],Timer
+mov word[es:8*4+2],cs
+sti
+
 call clrscr
 call DrawBorder
 call ScoreBoard
 call DrawScoreBoard
-
+call clearTop
 
 mov cx,5
 mov ax,0xb800
 push ax
 pop es
-mov word[CurrShapeType],1
+mov word[CurrShapeType],0
 mov ax,0
+jmp NewBlock
 GameLoop:
 
 
@@ -1258,6 +1431,7 @@ je NewBlock
 mov bx,0
  push bx
  call DrawCurrShape
+
 add word[CurrShape_Address],160
 mov ax,[Offset_Address]
 add [CurrShape_Address],ax
@@ -1284,12 +1458,14 @@ jmp GameLoop
 NewBlock:
 add word[CurrShapeType],1
 call RowCheck
-
-
 cmp word[CurrShapeType],5
 je ResetBlock
 continue:
-mov word[CurrShape_Address],212
+call clearTop
+call ClearCanvas
+call UpdateCurrentShape
+call GenerateNewBlock
+
 mov bx,1
 push bx
 call DrawCurrShape
@@ -1300,11 +1476,28 @@ mov word[CurrShapeType],1
 jmp continue
 
 run:
-
-
+mov bx,1
+push bx
+call DrawCurrShape
+ call Debug
 mov ax,0xb800
 push ax
 pop es
+mov cx,8
+mov di,[CurrShape_Address]
+test:
+mov ax,[es:di]
+or ax,0x8000
+mov [es:di],ax
+add di,2
+loop test
+
+l1:
+jmp l1
+
+
+
+
 
 
 mov ax,[oldksr]

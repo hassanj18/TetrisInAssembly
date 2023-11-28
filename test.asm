@@ -1233,6 +1233,134 @@ call DrawCurrShape
 pop bx
 ret
 
+
+blink:
+push es
+push ax
+push cx
+mov ax,0xb800
+mov es,ax
+
+push di
+mov cx,56
+BlinkL1:
+mov ax,[es:di]
+or ah,80h
+mov word[es:di],ax
+add di,2
+loop BlinkL1
+pop di
+push di
+sub di,160
+mov cx,56
+BlinkL2:
+mov ax,[es:di]
+or ah,80h
+mov word[es:di],ax
+add di,2
+loop BlinkL2
+pop di
+pop cx
+pop ax
+pop es
+ret
+ScrollUp:
+push cx
+push di
+push es
+push ds
+push si
+push ax
+mov ax,0xb800
+mov es,ax
+mov ds,ax
+shl cx,1
+cld
+mov si,di
+sub si,320
+ScrollLoop:
+push cx
+push di 
+
+mov cx,56
+rep movsw
+pop di
+pop cx
+sub di,160
+mov si,di
+sub si,320
+loop ScrollLoop
+pop ax
+pop si
+pop ds
+pop es
+pop di
+pop cx
+ret
+RowCheck:
+
+push di
+push cx
+push ax
+push es
+
+mov ax,0xb800
+mov es,ax
+mov cx,12
+mov di,3684
+RLoop:
+push cx
+push di
+mov cx,14
+Cloop:
+
+mov ax,[es:di]
+cmp ax,0x0720
+je CheckNextRow
+mov [es:di],ax
+add di,8
+loop Cloop
+
+mov di,624
+add word[score],10
+push word[score]
+call PrintNum
+
+pop di 
+pop cx
+;call blink
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+call delay
+
+
+call ScrollUp
+
+push cx
+push di
+
+CheckNextRow:
+pop di
+pop cx
+sub di,160
+sub di,160
+loop RLoop
+
+pop es
+pop ax
+pop cx
+pop di
+ret
+
+;--------------------------------------------------------------------------START
 start:
 
 ;hooking Keyboard Interupt
@@ -1312,6 +1440,7 @@ call delay
 jmp GameLoop
 
 NewBlock:
+call RowCheck
 add word[CurrShapeType],1
 cmp word[CurrShapeType],5
 je ResetBlock
