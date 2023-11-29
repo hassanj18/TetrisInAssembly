@@ -25,6 +25,7 @@ oldtimer:dd 0
 
 oldksr: dd 0
 
+PrevShapeType: dw 1
 CurrShapeType: dw 1
 CurrShape_Address: dw 212
 Offset_Address:dw 0
@@ -1254,12 +1255,12 @@ iret
 
 UpdateCurrentShape:
 push bx
-cmp word[CurrShapeType],4
+cmp word[PrevShapeType],4
 jne StartPosition2
 mov word[CurrShape_Address],2054
 jmp StartPosition
 StartPosition2:
-cmp word[CurrShapeType],3
+cmp word[PrevShapeType],3
 jne SetPostition
 mov word[CurrShape_Address],2048
 jmp StartPosition
@@ -1268,7 +1269,7 @@ mov word[CurrShape_Address],2056
 StartPosition:
 mov bx,1
 push bx
-call DrawCurrShape
+call DrawPreviousShape
 pop bx
 ret
 
@@ -1376,11 +1377,55 @@ randomend:
 inc ah
 xor dx,dx
 mov dl,ah
-mov word[CurrShapeType],dx
+mov word[PrevShapeType],dx
 pop bx
 pop dx
 pop ax
 ret
+
+
+DrawPreviousShape:
+push bp
+mov bp,sp
+push ax
+
+mov ax,[bp+4]
+cmp word[PrevShapeType],1
+je printi
+cmp word[PrevShapeType],2
+je printl
+cmp word[PrevShapeType],3
+je printt
+cmp word[PrevShapeType],4
+je prints
+jmp returnpls
+
+printi:
+push ax
+push word[CurrShape_Address]
+call Ishape
+jmp returnpls
+printl:
+push ax
+push word[CurrShape_Address]
+call LShape      
+jmp returnpls
+printt:
+push ax
+push word[CurrShape_Address]
+call TShape
+jmp returnpls
+prints:
+push ax
+push word[CurrShape_Address]
+call Sshape
+
+returnpls:
+pop ax
+pop bp
+ret 2
+
+
 
 ;-----------------------------------------------------------------------
 ;START
@@ -1474,7 +1519,8 @@ call RowCheck
 ;cmp word[CurrShapeType],5
 ;je ResetBlock
 
-
+mov dx,word[PrevShapeType]
+mov word[CurrShapeType],dx
 
 call GenerateRandom
 call GenerateNewBlock
