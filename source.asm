@@ -1054,7 +1054,7 @@ push cx
 push di
 push es
 mov cx,13
-mov di,164
+mov di,4
 mov ax,0xb800
 push ax
 pop es
@@ -1069,13 +1069,6 @@ jcxz EndCheck
 
 
 Check2:
-mov cx,5
-
-CheckEndGameCollisionLoop:
-cmp word[es:di],ax
-je EndCheck
-add di,320
-loop CheckEndGameCollisionLoop
 mov bx,1
 
 EndCheck:
@@ -1454,9 +1447,9 @@ mov bx,1
 push bx
 call DrawCurrShape
 
-call CheckEndGameCollision
-cmp bx,1
-je Game_end
+;call CheckEndGameCollision
+;cmp bx,1
+;je Game_end
 
 call delay
 call delay
@@ -1473,10 +1466,16 @@ je Game_end
 jmp GameLoop
 
 NewBlock:
+call CheckEndGameCollision
+cmp bx,1
+je Game_end
 ;add word[CurrShapeType],1
 call RowCheck
 ;cmp word[CurrShapeType],5
 ;je ResetBlock
+
+
+
 call GenerateRandom
 call GenerateNewBlock
 continue:
@@ -1497,6 +1496,7 @@ jmp continue
 
 
 Game_end:
+call DrawEndScreen
 xor ax,ax
 mov es,ax
 mov word[BoolTime],1
@@ -1512,8 +1512,8 @@ cli
 mov word[es:8*4],ax
 mov word[es:8*4+2],bx
 sti 
-call DrawEndScreen
-call DrawEndScreen
+
+;call DrawEndScreen
 
 
 
