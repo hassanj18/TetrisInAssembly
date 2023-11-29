@@ -1368,19 +1368,21 @@ ret
 
 GenerateRandom:
 push ax
-push dx
 push bx
-xor dx,dx
+push dx
+xor ax,ax
 cmp word[sec],0
 je randomend
-mov ax,3
+mov bl,4
 ;xor ax,ax
-mov bx,word[sec]
-div bx
+mov ax,word[sec]
+div bl
 
 
 randomend:
-inc dx
+inc ah
+xor dx,dx
+mov dl,ah
 mov word[CurrShapeType],dx
 pop bx
 pop dx
@@ -1434,8 +1436,7 @@ mov ax,0
 jmp NewBlock
 GameLoop:
 
-cmp word[min],0
-je Game_end
+
 
 call CollisionDetection
 cmp ax,0 
@@ -1463,9 +1464,11 @@ call delay
 call delay
 call delay
 call delay
-call delay
-call delay
 
+cmp word[sec],1
+jne GameLoop
+cmp word[min],0
+je Game_end
 
 jmp GameLoop
 
@@ -1474,6 +1477,7 @@ NewBlock:
 call RowCheck
 ;cmp word[CurrShapeType],5
 ;je ResetBlock
+call GenerateRandom
 call GenerateNewBlock
 continue:
 call clearTop
@@ -1493,6 +1497,8 @@ jmp continue
 
 
 Game_end:
+xor ax,ax
+mov es,ax
 mov word[BoolTime],1
 mov ax,[oldksr]
 mov bx,[oldksr+2]
