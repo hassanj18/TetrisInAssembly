@@ -16,11 +16,11 @@ mess3:db 'SHAPE'
 mess4: db 'G A M E  O V E R!'
 score:dw  0
 time: dw 0
+BoolTime:dw 0
 
-min: dw 0
-sec: dw 0
+min: dw 4
+sec: dw 59
 Tcounts: dw 0
-
 oldtimer:dd 0
 
 oldksr: dd 0
@@ -299,10 +299,10 @@ mov ax,4
 push ax
 call printMessage
 
-mov di,944
-mov ax,[time]
-push ax;
-call PrintNum
+; mov di,944
+; mov ax,[time]
+; push ax;
+; call PrintNum
 
 
 mov ax,0x3E
@@ -1224,40 +1224,40 @@ ret
 
 Timer: 
 push di
-push ax
-add word [cs:Tcounts],1 ; increment tick count
+cmp word[BoolTime],1
+je skipall
+inc word [cs:Tcounts] ; increment tick count
 cmp word [cs:Tcounts],18
 jne skipall
 
+
+;add word[CurrShape_Address],160
+
 ;printing
-
-mov word [cs:Tcounts],0
-add word[cs:sec],1
-cmp word[cs:sec],60
-jne PrintTime
-
-
-addMinute:
-mov word[cs:sec],0
-add word[cs:min],1
-
-PrintTime:
 
 mov di,946
 push word[min]
 call PrintNum
 
+
 add di,6
 push word[sec]
 call PrintNum
 
+;
+mov word[cs:Tcounts],0
+dec word[cs:sec]
+cmp word[cs:sec],0
+jne skipall
+mov word[cs:sec],59
+dec word[cs:min]
+cmp word[cs:min],0
+;je end
 skipall: 
 mov al, 0x20
 out 0x20, al ; send EOI to PIC
-pop ax
 pop di
 iret
-
 
 UpdateCurrentShape:
 push bx
@@ -1358,7 +1358,7 @@ mov word[CurrShape_Address],-908
 CheckShape2:
 cmp word[CurrShapeType],3
 jne Check3
-mov word[CurrShape_Address],-588
+mov word[CurrShape_Address],-268
 Check3:
 cmp word[CurrShapeType],4
 jne Check4
@@ -1366,7 +1366,26 @@ mov word[CurrShape_Address],-588
 Check4:
 ret
 
+GenerateRandom:
+push ax
+push dx
+push bx
+xor dx,dx
+cmp word[sec],0
+je randomend
+mov ax,3
+;xor ax,ax
+mov bx,word[sec]
+div bx
 
+
+randomend:
+inc dx
+mov word[CurrShapeType],dx
+pop bx
+pop dx
+pop ax
+ret
 
 ;-----------------------------------------------------------------------
 ;START
@@ -1415,7 +1434,8 @@ mov ax,0
 jmp NewBlock
 GameLoop:
 
-
+cmp word[min],0
+je Game_end
 
 call CollisionDetection
 cmp ax,0 
@@ -1435,7 +1455,7 @@ call DrawCurrShape
 
 call CheckEndGameCollision
 cmp bx,1
-je DrawEndScreen
+je Game_end
 
 call delay
 call delay
@@ -1450,10 +1470,11 @@ call delay
 jmp GameLoop
 
 NewBlock:
-add word[CurrShapeType],1
+;add word[CurrShapeType],1
 call RowCheck
-cmp word[CurrShapeType],5
-je ResetBlock
+;cmp word[CurrShapeType],5
+;je ResetBlock
+call GenerateNewBlock
 continue:
 call clearTop
 call ClearCanvas
@@ -1469,39 +1490,24 @@ ResetBlock:
 mov word[CurrShapeType],1
 jmp continue
 
-run:
-mov bx,1
-push bx
-call DrawCurrShape
- call Debug
-mov ax,0xb800
-push ax
-pop es
-mov cx,8
-mov di,[CurrShape_Address]
-test:
-mov ax,[es:di]
-or ax,0x8000
-mov [es:di],ax
-add di,2
-loop test
-
-l1:
-jmp l1
 
 
-
-
-
-
+Game_end:
+mov word[BoolTime],1
 mov ax,[oldksr]
 mov bx,[oldksr+2]
 cli 
-
 mov word[es:9*4],ax
 mov word[es:9*4+2],bx
 sti 
-
+mov ax,[oldtimer]
+mov bx,[oldtimer+2]
+cli 
+mov word[es:8*4],ax
+mov word[es:8*4+2],bx
+sti 
+call DrawEndScreen
+call DrawEndScreen
 
 
 
