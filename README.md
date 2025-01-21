@@ -23,10 +23,9 @@ This is a simple implementation of the classic Tetris game, written in x86 Assem
 1. **Clone the repository:**  
 
    ```bash  
-   git clone https://github.com/hassanj18/TetrisInAssembly.git
-   cd tetris-assembly
+   git clone https://github.com/hassanj18/TetrisInAssembly
 2. Assemble the Code in Dosbox
-     nasm -f bin tetris.asm -o tetris.com
+     nasm -f bin source.asm -o tetris.com
 3. Run the Executable:
      tetris.com
 
